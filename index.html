@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fitness Dashboard</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -93,50 +96,68 @@
   </div>
 
   <script>
-    // Gewicht laden und anzeigen
-    const weightData = JSON.parse(localStorage.getItem('weightData')) || [];
-    const ctx = document.getElementById('weightChart').getContext('2d');
+const firebaseConfig = {
+  apiKey: "AIzaSyAua9pwKE_2Vz-juRmZjWJXXZaxeOABKw0",
+  authDomain: "fitnesstracker-b600d.firebaseapp.com",
+  projectId: "fitnesstracker-b600d",
+  storageBucket: "fitnesstracker-b600d.firebasestorage.app",
+  messagingSenderId: "1050841578908",
+  appId: "1:1050841578908:web:a916003dc21bd5c131dc59",
+  measurementId: "G-1FJXCYC4H9"
+};
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-    if (weightData.length > 0) {
-      const labels = weightData.map(d => d.date);
-      const weights = weightData.map(d => d.weight);
+    let userId = null;
 
+    auth.onAuthStateChanged(async user => {
+      if (!user) {
+        alert("Nicht eingeloggt! Du wirst zur Login-Seite weitergeleitet.");
+        window.location.href = "login.html";
+        return;
+      }
+      userId = user.uid;
+      await renderChart();
+      await renderTrainings();
+    });
+
+    async function renderChart() {
+      const ctx = document.getElementById('weightChart').getContext('2d');
+      const snapshot = await db.collection('users').doc(userId).collection('gewicht').orderBy("date").get();
+      const labels = snapshot.docs.map(doc => doc.data().date);
+      const values = snapshot.docs.map(doc => doc.data().weight);
       new Chart(ctx, {
         type: 'line',
         data: {
           labels,
           datasets: [{
             label: 'Gewicht (kg)',
-            data: weights,
+            data: values,
             borderColor: 'blue',
             fill: false,
             tension: 0.2
           }]
-        },
-        options: {
-          scales: {
-            y: {
-              beginAtZero: false
-            }
-          }
         }
       });
     }
 
-    // Trainingseinträge laden
-    const trainingEntries = JSON.parse(localStorage.getItem('trainingData')) || [];
-    const previewContainer = document.getElementById('trainingEntries');
-
-    if (trainingEntries.length > 0) {
-      const latest = trainingEntries.slice(-3).reverse();
-      previewContainer.innerHTML = latest.map(t => `
-        <div class="entry">
-          <strong>${t.date}</strong> – <em>${(t.groups || []).join(', ')}</em><br>
-          <pre>${t.details}</pre>
-        </div>
-      `).join('');
-    } else {
-      previewContainer.innerHTML = '<p style="text-align:center;">Keine Einträge vorhanden.</p>';
+    async function renderTrainings() {
+      const container = document.getElementById('trainingEntries');
+      const snapshot = await db.collection('users').doc(userId).collection('training').orderBy("date", "desc").limit(3).get();
+      if (snapshot.empty) {
+        container.innerHTML = '<p style="text-align:center;">Keine Einträge vorhanden.</p>';
+        return;
+      }
+      container.innerHTML = snapshot.docs.map(doc => {
+        const t = doc.data();
+        return `
+          <div class="entry">
+            <strong>${t.date}</strong> – <em>${t.groups.join(', ')}</em><br>
+            <pre>${t.details}</pre>
+          </div>
+        `;
+      }).join('');
     }
   </script>
 </body>
