@@ -45,58 +45,65 @@
     <p id="status"></p>
   </div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAua9pwKE_2Vz-juRmZjWJXXZaxeOABKw0",
-      authDomain: "fitnesstracker-b600d.firebaseapp.com",
-      projectId: "fitnesstracker-b600d",
-      storageBucket: "fitnesstracker-b600d.appspot.com",
-      messagingSenderId: "1050841578908",
-      appId: "1:1050841578908:web:a916003dc21bd5c131dc59",
-      measurementId: "G-1FJXCYC4H9"
-    };
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+  const firebaseConfig = {
+    apiKey: "AIzaSyAua9pwKE_2Vz-juRmZjWJXXZaxeOABKw0",
+    authDomain: "fitnesstracker-b600d.firebaseapp.com",
+    projectId: "fitnesstracker-b600d",
+    storageBucket: "fitnesstracker-b600d.appspot.com",
+    messagingSenderId: "1050841578908",
+    appId: "1:1050841578908:web:a916003dc21bd5c131dc59",
+    measurementId: "G-1FJXCYC4H9"
+  };
 
-    function login() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          document.getElementById("status").innerText = "Erfolgreich eingeloggt.";
-          window.location.href = "index.html";
-        })
-        .catch(err => {
-          document.getElementById("status").innerText = err.message;
-        });
-    }
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
 
-    function register() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      auth.createUserWithEmailAndPassword(email, password)
-        .then(() => {
-          document.getElementById("status").innerText = "Registrierung erfolgreich.";
-        })
-        .catch(err => {
-          document.getElementById("status").innerText = err.message;
-        });
-    }
+  document.querySelector("button[onclick='login()']").onclick = login;
+  document.querySelector("button[onclick='register()']").onclick = register;
+  document.querySelector("button[onclick='logout()']").onclick = logout;
 
-    function logout() {
-      auth.signOut().then(() => {
-        document.getElementById("status").innerText = "Abgemeldet.";
+  function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    signInWithEmailAndPassword(auth, email, password)
+      .then(() => {
+        document.getElementById("status").innerText = "Erfolgreich eingeloggt.";
+        window.location.href = "index.html";
+      })
+      .catch(err => {
+        document.getElementById("status").innerText = err.message;
       });
-    }
+  }
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        console.log("Angemeldet als:", user.email);
-      } else {
-        console.log("Nicht angemeldet.");
-      }
+  function register() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    createUserWithEmailAndPassword(auth, email, password)
+      .then(() => {
+        document.getElementById("status").innerText = "Registrierung erfolgreich.";
+      })
+      .catch(err => {
+        document.getElementById("status").innerText = err.message;
+      });
+  }
+
+  function logout() {
+    signOut(auth).then(() => {
+      document.getElementById("status").innerText = "Abgemeldet.";
     });
-  </script>
+  }
+
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      console.log("Angemeldet als:", user.email);
+    } else {
+      console.log("Nicht angemeldet.");
+    }
+  });
+</script>
 </body>
 </html>
