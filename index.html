@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fitness Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .dashboard {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 40px;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 30px;
+      width: 250px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .card:hover {
+      transform: scale(1.05);
+    }
+    .emoji {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+    #chartContainer {
+      max-width: 600px;
+      margin: 50px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .trainings-preview {
+      max-width: 600px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .entry {
+      border-bottom: 1px solid #eee;
+      padding: 10px 0;
+    }
+    .entry:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Willkommen zu deinem Fitness-Tracker</h1>
+
+  <div class="dashboard">
+    <div class="card" onclick="location.href='gewicht.html'">
+      <div class="emoji">📈</div>
+      <strong>Gewicht tracken</strong>
+    </div>
+    <div class="card" onclick="location.href='training.html'">
+      <div class="emoji">🏋️</div>
+      <strong>Training loggen</strong>
+    </div>
+    <div class="card" onclick="location.href='ernaehrung.html'">
+      <div class="emoji">🍽️</div>
+      <strong>Ernährung (später)</strong>
+    </div>
+  </div>
+
+  <div id="chartContainer">
+    <h2 style="text-align:center;">Gewichtsverlauf</h2>
+    <canvas id="weightChart"></canvas>
+  </div>
+
+  <div class="trainings-preview">
+    <h2 style="text-align:center;">Letzte Trainingseinheiten</h2>
+    <div id="trainingEntries"></div>
+  </div>
+
+  <script>
+    // Gewicht laden und anzeigen
+    const weightData = JSON.parse(localStorage.getItem('weightData')) || [];
+    const ctx = document.getElementById('weightChart').getContext('2d');
+
+    if (weightData.length > 0) {
+      const labels = weightData.map(d => d.date);
+      const weights = weightData.map(d => d.weight);
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Gewicht (kg)',
+            data: weights,
+            borderColor: 'blue',
+            fill: false,
+            tension: 0.2
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: false
+            }
+          }
+        }
+      });
+    }
+
+    // Trainingseinträge laden
+    const trainingEntries = JSON.parse(localStorage.getItem('trainingData')) || [];
+    const previewContainer = document.getElementById('trainingEntries');
+
+    if (trainingEntries.length > 0) {
+      const latest = trainingEntries.slice(-3).reverse();
+      previewContainer.innerHTML = latest.map(t => `
+        <div class="entry">
+          <strong>${t.date}</strong> – <em>${(t.groups || []).join(', ')}</em><br>
+          <pre>${t.details}</pre>
+        </div>
+      `).join('');
+    } else {
+      previewContainer.innerHTML = '<p style="text-align:center;">Keine Einträge vorhanden.</p>';
+    }
+  </script>
+</body>
+</html>

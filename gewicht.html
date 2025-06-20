@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gewicht tracken (Firebase)</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; background: #f7f9fb; }
+    h1 { text-align: center; }
+    form { max-width: 400px; margin: 20px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    input, button { display: block; width: 100%; margin: 10px 0; padding: 10px; font-size: 16px; }
+    #chartContainer { max-width: 700px; margin: 40px auto; }
+    .entries { max-width: 700px; margin: 20px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .entry { border-bottom: 1px solid #ddd; padding: 10px 0; position: relative; }
+    .entry:last-child { border-bottom: none; }
+    .delete-button { background-color: #ff4d4d; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; float: right; }
+  </style>
+</head>
+<body>
+  <h1>📈 Gewicht über Zeit</h1>
+
+  <form id="weightForm">
+    <input type="date" id="date" required>
+    <input type="number" id="weight" step="0.1" placeholder="Gewicht (kg)" required>
+    <button type="submit">Speichern</button>
+  </form>
+
+  <div id="chartContainer">
+    <canvas id="weightChart"></canvas>
+  </div>
+
+  <div class="entries" id="weightEntries"></div>
+
+  <script>
+    // Firebase-Konfiguration hier einfügen:
+const firebaseConfig = {
+  apiKey: "AIzaSyAua9pwKE_2Vz-juRmZjWJXXZaxeOABKw0",
+  authDomain: "fitnesstracker-b600d.firebaseapp.com",
+  projectId: "fitnesstracker-b600d",
+  storageBucket: "fitnesstracker-b600d.firebasestorage.app",
+  messagingSenderId: "1050841578908",
+  appId: "1:1050841578908:web:a916003dc21bd5c131dc59",
+  measurementId: "G-1FJXCYC4H9"
+};
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const form = document.getElementById('weightForm');
+    const dateInput = document.getElementById('date');
+    const weightInput = document.getElementById('weight');
+    const entriesDiv = document.getElementById('weightEntries');
+    const ctx = document.getElementById('weightChart').getContext('2d');
+
+    let chart;
+    let userId = null;
+
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        alert("Nicht eingeloggt! Du wirst zur Login-Seite weitergeleitet.");
+        window.location.href = "login.html";
+      } else {
+        userId = user.uid;
+        renderEntries();
+        updateChart();
+      }
+    });
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const date = dateInput.value;
+      const weight = parseFloat(weightInput.value);
+      if (!date || isNaN(weight)) return;
+
+      await db.collection('users').doc(userId).collection('gewicht').add({ date, weight });
+      form.reset();
+      renderEntries();
+      updateChart();
+    });
+
+    async function renderEntries() {
+      const snapshot = await db.collection('users').doc(userId).collection('gewicht').orderBy("date").get();
+      entriesDiv.innerHTML = snapshot.docs.map(doc => {
+        const d = doc.data();
+        return `
+          <div class="entry">
+            <button class="delete-button" onclick="deleteEntry('${doc.id}')">Löschen</button>
+            <strong>${d.date}</strong>: ${d.weight} kg
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function updateChart() {
+      const snapshot = await db.collection('users').doc(userId).collection('gewicht').orderBy("date").get();
+      const labels = snapshot.docs.map(doc => doc.data().date);
+      const values = snapshot.docs.map(doc => doc.data().weight);
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Gewicht (kg)',
+            data: values,
+            borderColor: 'blue',
+            fill: false,
+            tension: 0.2
+          }]
+        }
+      });
+    }
+
+    async function deleteEntry(docId) {
+      await db.collection('users').doc(userId).collection('gewicht').doc(docId).delete();
+      renderEntries();
+      updateChart();
+    }
+  </script>
+</body>
+</html>

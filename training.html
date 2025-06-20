@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Training loggen (Firebase)</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f4f7;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    form, .entries {
+      max-width: 600px;
+      margin: 20px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    input, textarea, button {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      font-size: 16px;
+    }
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    .checkbox-group label {
+      flex: 1 1 45%;
+      background: #eef2f6;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .entry {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
+      position: relative;
+    }
+    .entry:last-child {
+      border-bottom: none;
+    }
+    .delete-button {
+      background-color: #ff4d4d;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      float: right;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏋️ Trainingseinheiten</h1>
+
+  <form id="trainingForm">
+    <input type="date" id="tDate" required>
+
+    <label>Muskelgruppen:</label>
+    <div class="checkbox-group">
+      <label><input type="checkbox" name="tGroups" value="Brust"> Brust</label>
+      <label><input type="checkbox" name="tGroups" value="Rücken"> Rücken</label>
+      <label><input type="checkbox" name="tGroups" value="Beine"> Beine</label>
+      <label><input type="checkbox" name="tGroups" value="Schultern"> Schultern</label>
+      <label><input type="checkbox" name="tGroups" value="Arme"> Arme</label>
+      <label><input type="checkbox" name="tGroups" value="Ganzkörper"> Ganzkörper</label>
+    </div>
+
+    <label>Übungen auswählen und Gewicht/Wdh eingeben:</label>
+    <div id="exerciseList">
+      <label>Bankdrücken <input type="text" name="Bankdrücken"></label>
+      <label>Kreuzheben <input type="text" name="Kreuzheben"></label>
+      <label>Squats <input type="text" name="Squats"></label>
+      <label>Latziehen <input type="text" name="Latziehen"></label>
+      <label>Bizepscurls <input type="text" name="Bizepscurls"></label>
+      <label>Liegestütze <input type="text" name="Liegestütze"></label>
+      <label>Dips <input type="text" name="Dips"></label>
+      <label>Klimzüge <input type="text" name="Klimzüge"></label>
+    </div>
+
+    <button type="submit">Speichern</button>
+  </form>
+
+  <div class="entries" id="entries"></div>
+
+  <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAua9pwKE_2Vz-juRmZjWJXXZaxeOABKw0",
+  authDomain: "fitnesstracker-b600d.firebaseapp.com",
+  projectId: "fitnesstracker-b600d",
+  storageBucket: "fitnesstracker-b600d.firebasestorage.app",
+  messagingSenderId: "1050841578908",
+  appId: "1:1050841578908:web:a916003dc21bd5c131dc59",
+  measurementId: "G-1FJXCYC4H9"
+};
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const form = document.getElementById('trainingForm');
+    const entriesDiv = document.getElementById('entries');
+
+    let userId = null;
+
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        alert("Nicht eingeloggt! Du wirst zur Login-Seite weitergeleitet.");
+        window.location.href = "login.html";
+      } else {
+        userId = user.uid;
+        renderEntries();
+      }
+    });
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+
+      const date = document.getElementById('tDate').value;
+      const selectedGroups = Array.from(document.querySelectorAll('input[name="tGroups"]:checked')).map(c => c.value);
+      const exerciseInputs = document.querySelectorAll('#exerciseList input');
+      const exercises = Array.from(exerciseInputs)
+        .filter(input => input.value.trim() !== '')
+        .map(input => `${input.name}: ${input.value}`);
+
+      if (!date || selectedGroups.length === 0 || exercises.length === 0) return;
+
+      await db.collection('users').doc(userId).collection('training').add({
+        date,
+        groups: selectedGroups,
+        details: exercises.join('\n')
+      });
+
+      form.reset();
+      renderEntries();
+    });
+
+    async function renderEntries() {
+      const snapshot = await db.collection('users').doc(userId).collection('training').orderBy("date", "desc").get();
+      entriesDiv.innerHTML = snapshot.docs.map(doc => {
+        const t = doc.data();
+        return `
+          <div class="entry">
+            <button class="delete-button" onclick="deleteEntry('${doc.id}')">Löschen</button>
+            <strong>${t.date}</strong> – <em>${t.groups.join(', ')}</em><br>
+            <pre>${t.details}</pre>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function deleteEntry(docId) {
+      await db.collection('users').doc(userId).collection('training').doc(docId).delete();
+      renderEntries();
+    }
+  </script>
+</body>
+</html>
