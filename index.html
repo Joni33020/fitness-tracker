@@ -96,15 +96,16 @@
   </div>
 
   <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyAua9pwKE_2Vz-juRmZjWJXXZaxeOABKw0",
-  authDomain: "fitnesstracker-b600d.firebaseapp.com",
-  projectId: "fitnesstracker-b600d",
-  storageBucket: "fitnesstracker-b600d.appspot.com",
-  messagingSenderId: "1050841578908",
-  appId: "1:1050841578908:web:a916003dc21bd5c131dc59",
-  measurementId: "G-1FJXCYC4H9"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyAua9pwKE_2Vz-juRmZjWJXXZaxeOABKw0",
+      authDomain: "fitnesstracker-b600d.firebaseapp.com",
+      projectId: "fitnesstracker-b600d",
+      storageBucket: "fitnesstracker-b600d.appspot.com",
+      messagingSenderId: "1050841578908",
+      appId: "1:1050841578908:web:a916003dc21bd5c131dc59",
+      measurementId: "G-1FJXCYC4H9"
+    };
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -113,20 +114,23 @@ const firebaseConfig = {
 
     auth.onAuthStateChanged(async user => {
       if (!user) {
-        alert("Nicht eingeloggt! Du wirst zur Login-Seite weitergeleitet.");
+        console.warn("Kein Nutzer eingeloggt – Weiterleitung.");
         window.location.href = "login.html";
         return;
       }
       userId = user.uid;
-      await renderChart();
-      await renderTrainings();
+      try {
+        await renderChart();
+        await renderTrainings();
+      } catch (err) {
+        console.error("Fehler beim Rendern der Inhalte:", err);
+      }
     });
 
     async function renderChart() {
       const chartElement = document.getElementById('weightChart');
       if (!chartElement) return;
       const ctx = chartElement.getContext('2d');
-
       const snapshot = await db.collection('users').doc(userId).collection('gewicht').orderBy("date").get();
       const labels = snapshot.docs.map(doc => doc.data().date);
       const values = snapshot.docs.map(doc => doc.data().weight);
@@ -147,6 +151,7 @@ const firebaseConfig = {
 
     async function renderTrainings() {
       const container = document.getElementById('trainingEntries');
+      if (!container) return;
       const snapshot = await db.collection('users').doc(userId).collection('training').orderBy("date", "desc").limit(3).get();
       if (snapshot.empty) {
         container.innerHTML = '<p style="text-align:center;">Keine Einträge vorhanden.</p>';
@@ -156,7 +161,7 @@ const firebaseConfig = {
         const t = doc.data();
         return `
           <div class="entry">
-            <strong>${t.date}</strong> – <em>${t.groups.join(', ')}</em><br>
+            <strong>${t.date}</strong> – <em>${t.groups?.join(', ')}</em><br>
             <pre>${t.details}</pre>
           </div>
         `;
