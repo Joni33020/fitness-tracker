@@ -46,19 +46,16 @@
   </div>
 
   <script>
-    
-const firebaseConfig = {
-  apiKey: "AIzaSyAua9pwKE_2Vz-juRmZjWJXXZaxeOABKw0",
-  authDomain: "fitnesstracker-b600d.firebaseapp.com",
-  projectId: "fitnesstracker-b600d",
-  storageBucket: "fitnesstracker-b600d.appspot.com",
-  messagingSenderId: "1050841578908",
-  appId: "1:1050841578908:web:a916003dc21bd5c131dc59",
-  measurementId: "G-1FJXCYC4H9"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyAua9pwKE_2Vz-juRmZjWJXXZaxeOABKw0",
+      authDomain: "fitnesstracker-b600d.firebaseapp.com",
+      projectId: "fitnesstracker-b600d",
+      storageBucket: "fitnesstracker-b600d.appspot.com",
+      messagingSenderId: "1050841578908",
+      appId: "1:1050841578908:web:a916003dc21bd5c131dc59",
+      measurementId: "G-1FJXCYC4H9"
+    };
 
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
@@ -93,7 +90,6 @@ const analytics = getAnalytics(app);
       });
     }
 
-    // Optional: Login-Zustand überwachen
     auth.onAuthStateChanged(user => {
       if (user) {
         console.log("Angemeldet als:", user.email);
