@@ -123,7 +123,10 @@ const firebaseConfig = {
     });
 
     async function renderChart() {
-      const ctx = document.getElementById('weightChart').getContext('2d');
+      const chartElement = document.getElementById('weightChart');
+      if (!chartElement) return;
+      const ctx = chartElement.getContext('2d');
+
       const snapshot = await db.collection('users').doc(userId).collection('gewicht').orderBy("date").get();
       const labels = snapshot.docs.map(doc => doc.data().date);
       const values = snapshot.docs.map(doc => doc.data().weight);
