@@ -65,6 +65,19 @@
     .entry:last-child {
       border-bottom: none;
     }
+    .logout-container {
+      text-align: center;
+      margin-top: 30px;
+    }
+    .logout-container button {
+      background-color: #ff4d4d;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
@@ -93,6 +106,10 @@
   <div class="trainings-preview">
     <h2 style="text-align:center;">Letzte Trainingseinheiten</h2>
     <div id="trainingEntries"></div>
+  </div>
+
+  <div class="logout-container">
+    <button onclick="logout()">Abmelden</button>
   </div>
 
   <script>
@@ -166,6 +183,12 @@
           </div>
         `;
       }).join('');
+    }
+
+    function logout() {
+      auth.signOut().then(() => {
+        window.location.href = "login.html";
+      });
     }
   </script>
 </body>
