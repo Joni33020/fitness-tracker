@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fitness Dashboard</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-app.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-auth.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-firestore.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -14,6 +14,25 @@
       background: #f0f4f8;
       margin: 0;
       padding: 20px;
+    }
+    .topbar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .user-info {
+      background: #ffffff;
+      padding: 10px 15px;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      font-size: 14px;
+    }
+    .user-info button {
+      margin-left: 10px;
+      padding: 5px 10px;
+      font-size: 14px;
+      cursor: pointer;
     }
     h1 {
       text-align: center;
@@ -65,22 +84,16 @@
     .entry:last-child {
       border-bottom: none;
     }
-    .logout-container {
-      text-align: center;
-      margin-top: 30px;
-    }
-    .logout-container button {
-      background-color: #ff4d4d;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-    }
   </style>
 </head>
 <body>
+  <div class="topbar">
+    <div id="userArea" class="user-info" style="display: none;">
+      👤 Eingeloggt als: <span id="userEmail"></span>
+      <button onclick="logout()">Abmelden</button>
+    </div>
+  </div>
+
   <h1>Willkommen zu deinem Fitness-Tracker</h1>
 
   <div class="dashboard">
@@ -108,10 +121,6 @@
     <div id="trainingEntries"></div>
   </div>
 
-  <div class="logout-container">
-    <button onclick="logout()">Abmelden</button>
-  </div>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAua9pwKE_2Vz-juRmZjWJXXZaxeOABKw0",
@@ -131,23 +140,28 @@
 
     auth.onAuthStateChanged(async user => {
       if (!user) {
-        console.warn("Kein Nutzer eingeloggt – Weiterleitung.");
         window.location.href = "login.html";
         return;
       }
+
+      document.getElementById("userArea").style.display = "block";
+      document.getElementById("userEmail").textContent = user.email;
+
       userId = user.uid;
-      try {
-        await renderChart();
-        await renderTrainings();
-      } catch (err) {
-        console.error("Fehler beim Rendern der Inhalte:", err);
-      }
+      await renderChart();
+      await renderTrainings();
     });
 
+    function logout() {
+      auth.signOut().then(() => {
+        window.location.href = "login.html";
+      });
+    }
+
     async function renderChart() {
-      const chartElement = document.getElementById('weightChart');
-      if (!chartElement) return;
-      const ctx = chartElement.getContext('2d');
+      const canvas = document.getElementById('weightChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
       const snapshot = await db.collection('users').doc(userId).collection('gewicht').orderBy("date").get();
       const labels = snapshot.docs.map(doc => doc.data().date);
       const values = snapshot.docs.map(doc => doc.data().weight);
@@ -168,7 +182,6 @@
 
     async function renderTrainings() {
       const container = document.getElementById('trainingEntries');
-      if (!container) return;
       const snapshot = await db.collection('users').doc(userId).collection('training').orderBy("date", "desc").limit(3).get();
       if (snapshot.empty) {
         container.innerHTML = '<p style="text-align:center;">Keine Einträge vorhanden.</p>';
@@ -178,17 +191,11 @@
         const t = doc.data();
         return `
           <div class="entry">
-            <strong>${t.date}</strong> – <em>${t.groups?.join(', ')}</em><br>
+            <strong>${t.date}</strong> – <em>${t.groups.join(', ')}</em><br>
             <pre>${t.details}</pre>
           </div>
         `;
       }).join('');
-    }
-
-    function logout() {
-      auth.signOut().then(() => {
-        window.location.href = "login.html";
-      });
     }
   </script>
 </body>
