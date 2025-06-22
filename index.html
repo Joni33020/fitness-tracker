@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fitness Dashboard</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
@@ -143,9 +143,12 @@
         window.location.href = "login.html";
         return;
       }
-      userId = user.uid;
+
+      // Login sichtbar machen
       document.getElementById("userArea").style.display = "block";
-      document.getElementById("userEmail").innerText = user.email;
+      document.getElementById("userEmail").textContent = user.email;
+
+      userId = user.uid;
       await renderChart();
       await renderTrainings();
     });
@@ -157,12 +160,13 @@
     }
 
     async function renderChart() {
-      const ctx = document.getElementById('weightChart');
-      if (!ctx) return;
+      const canvas = document.getElementById('weightChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
       const snapshot = await db.collection('users').doc(userId).collection('gewicht').orderBy("date").get();
       const labels = snapshot.docs.map(doc => doc.data().date);
       const values = snapshot.docs.map(doc => doc.data().weight);
-      new Chart(ctx.getContext('2d'), {
+      new Chart(ctx, {
         type: 'line',
         data: {
           labels,
