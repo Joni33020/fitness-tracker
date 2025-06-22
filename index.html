@@ -143,4 +143,44 @@
     }
 
     async function renderChart() {
-      const canv
+      const canvas = document.getElementById('weightChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const snapshot = await db.collection('users').doc(userId).collection('gewicht').orderBy("date").get();
+      const labels = snapshot.docs.map(doc => doc.data().date);
+      const values = snapshot.docs.map(doc => doc.data().weight);
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Gewicht (kg)',
+            data: values,
+            borderColor: 'blue',
+            fill: false,
+            tension: 0.2
+          }]
+        }
+      });
+    }
+
+    async function renderTrainings() {
+      const container = document.getElementById('trainingEntries');
+      const snapshot = await db.collection('users').doc(userId).collection('training').orderBy("date", "desc").limit(3).get();
+      if (snapshot.empty) {
+        container.innerHTML = '<p style="text-align:center;">Keine Einträge vorhanden.</p>';
+        return;
+      }
+      container.innerHTML = snapshot.docs.map(doc => {
+        const t = doc.data();
+        return `
+          <div class="entry">
+            <strong>${t.date}</strong> – <em>${t.groups.join(', ')}</em><br>
+            <pre>${t.details}</pre>
+          </div>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>
